@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 class HomeScreen extends StatefulWidget {
 
@@ -9,6 +12,40 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
 
   TextEditingController userInputTextEditingController = TextEditingController();
+  final SpeechToText speechToTextInstance = SpeechToText();
+  String recordedAudioText = "";
+  bool isLoading = false;
+
+  void initializeSpeechToText() async {
+    await speechToTextInstance.initialize();
+    setState(() {
+
+    });
+  }
+
+  void startListeningNow() async {
+    FocusScope.of(context).unfocus();
+    await speechToTextInstance.listen(onResult: onSpeechToTextResult);
+  }
+
+  void stoptListeningNow() async{
+    await speechToTextInstance.stop();
+    setState(() {
+
+    });
+  }
+
+  void onSpeechToTextResult(SpeechRecognitionResult recognitionResult){
+    recordedAudioText = recognitionResult.recognizedWords;
+    print('Speech is result is now available');
+    print(recordedAudioText);
+  }
+
+  @override
+  void initState() {
+    initializeSpeechToText();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,12 +100,23 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
+              const SizedBox(height: 40.0,),
               Center(
                 child: InkWell(
                   onTap: (){
-                    
+                    speechToTextInstance.isListening ? stoptListeningNow() : startListeningNow();
                   },
-                  child: Image.asset("images/assistant_icon.png",
+                  child: speechToTextInstance.isListening
+                      ? Center(child: LoadingAnimationWidget.beat(
+                    size: 300,
+                    color: speechToTextInstance.isListening
+                        ? Colors.deepPurple
+                        : isLoading
+                        ? Colors.deepPurple[400]!
+                        : Colors.deepPurple[200]!
+                  ),
+                  )
+                      : Image.asset("images/assistant_icon.png",
                     height: 300,
                     width: 300,
                   ),
@@ -105,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       duration: const Duration(
                         milliseconds: 1000,
                       ),
-                      curve: Curves.easeInOutCubicEmphasized,
+                      curve: Curves.easeInOutBack,
                       child: const Icon(
                         Icons.send,
                         color: Colors.greenAccent,
